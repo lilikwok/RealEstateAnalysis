@@ -1,0 +1,847 @@
+---
+title: "Random Forest Models"
+author: "Walt Ames"
+date: "8/2/2019"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(MASS)
+library(randomForest)
+library(MLmetrics)
+```
+
+```{r}
+m1_full <- read_csv("m1_full.csv")
+m2_full <- read_csv("m2_full.csv")
+m1_c1 <- read_csv("m1_c1.csv")
+m2_c1 <- read_csv("m2_c1.csv")
+m1_c2 <- read_csv("m1_c2.csv")
+m2_c2 <- read_csv("m2_c2.csv")
+m1_c3 <- read_csv("m1_c3.csv")
+m2_c3 <- read_csv("m2_c3.csv")
+
+#new 5 cluster 
+m1_c1_kmean <- read_csv("m1_c1_kmean.csv")
+m2_c1_kmean <- read_csv("m2_c1_kmean.csv")
+m1_c2_kmean <- read_csv("m1_c2_kmean.csv")
+m2_c2_kmean <- read_csv("m2_c2_kmean.csv")
+m1_c3_kmean <- read_csv("m1_c3_kmean.csv")
+m2_c3_kmean <- read_csv("m2_c3_kmean.csv")
+m1_c4_kmean <- read_csv("m1_c4_kmean.csv")
+m2_c4_kmean <- read_csv("m2_c4_kmean.csv")
+m1_c5_kmean <- read_csv("m1_c5_kmean.csv")
+m2_c5_kmean <- read_csv("m2_c5_kmean.csv")
+```
+
+```{r}
+m1_full[is.na(m1_full['Crime_Num']),'Crime_Num'] <- 0
+m2_full[is.na(m2_full['Crime_Num']),'Crime_Num'] <- 0
+m1_c1[is.na(m1_c1['Crime_Num']),'Crime_Num'] <- 0
+m2_c1[is.na(m2_c1['Crime_Num']),'Crime_Num'] <- 0
+m1_c2[is.na(m1_c2['Crime_Num']),'Crime_Num'] <- 0
+m2_c2[is.na(m2_c2['Crime_Num']),'Crime_Num'] <- 0
+m1_c3[is.na(m1_c3['Crime_Num']),'Crime_Num'] <- 0
+m2_c3[is.na(m2_c3['Crime_Num']),'Crime_Num'] <- 0
+
+m1_c1_kmean[is.na(m1_c1_kmean['Crime_Num']),'Crime_Num'] <- 0
+m2_c1_kmean[is.na(m2_c1_kmean['Crime_Num']),'Crime_Num'] <- 0
+m1_c2_kmean[is.na(m1_c2_kmean['Crime_Num']),'Crime_Num'] <- 0 
+m2_c2_kmean[is.na(m2_c2_kmean['Crime_Num']),'Crime_Num'] <- 0
+m1_c3_kmean[is.na(m1_c3_kmean['Crime_Num']),'Crime_Num'] <- 0
+m2_c3_kmean[is.na(m2_c3_kmean['Crime_Num']),'Crime_Num'] <- 0
+m1_c4_kmean[is.na(m1_c4_kmean['Crime_Num']),'Crime_Num'] <- 0
+m2_c4_kmean[is.na(m2_c4_kmean['Crime_Num']),'Crime_Num'] <- 0
+m1_c5_kmean[is.na(m1_c5_kmean['Crime_Num']),'Crime_Num'] <- 0
+m2_c5_kmean[is.na(m2_c5_kmean['Crime_Num']),'Crime_Num'] <- 0
+```
+
+```{r}
+m1_full <- m1_full %>% subset(select = -Parcel_Number)
+m2_full <- m2_full %>% subset(select = -Parcel_Number)
+m1_c1 <- m1_c1 %>% subset(select = -Parcel_Number)
+m2_c1 <- m2_c1 %>% subset(select = -Parcel_Number)
+m1_c2 <- m1_c2 %>% subset(select = -Parcel_Number)
+m2_c2 <- m2_c2 %>% subset(select = -Parcel_Number)
+m1_c3 <- m1_c3 %>% subset(select = -Parcel_Number)
+m2_c3 <- m2_c3 %>% subset(select = -Parcel_Number)
+
+m1_c1_kmean <- m1_c1_kmean %>% subset(select = -Parcel_Number)
+m2_c1_kmean <- m2_c1_kmean %>% subset(select = -Parcel_Number)
+m1_c2_kmean <- m1_c2_kmean %>% subset(select = -Parcel_Number)
+m2_c2_kmean <- m2_c2_kmean %>% subset(select = -Parcel_Number)
+m1_c3_kmean <- m1_c3_kmean %>% subset(select = -Parcel_Number)
+m2_c3_kmean <- m2_c3_kmean %>% subset(select = -Parcel_Number)
+m1_c4_kmean <- m1_c4_kmean %>% subset(select = -Parcel_Number)
+m2_c4_kmean <- m2_c4_kmean %>% subset(select = -Parcel_Number)
+m1_c5_kmean <- m1_c5_kmean %>% subset(select = -Parcel_Number)
+m2_c5_kmean <- m2_c5_kmean %>% subset(select = -Parcel_Number)
+
+
+m2_full <- m2_full %>% subset(select = -Crime_Num)
+m2_c1 <- m2_c1 %>% subset(select = -Crime_Num)
+m2_c2 <- m2_c2 %>% subset(select = -Crime_Num)
+m2_c3 <- m2_c3 %>% subset(select = -Crime_Num)
+
+m2_c1_kmean <- m2_c1_kmean %>% subset(select = -Crime_Num)
+m2_c2_kmean <- m2_c2_kmean %>% subset(select = -Crime_Num)
+m2_c3_kmean <- m2_c3_kmean %>% subset(select = -Crime_Num)
+m2_c4_kmean <- m2_c4_kmean %>% subset(select = -Crime_Num)
+m2_c5_kmean <- m2_c5_kmean %>% subset(select = -Crime_Num)
+
+m1_full <- m1_full %>% subset(select = -percent_complete)
+m2_full <- m2_full %>% subset(select = -percent_complete)
+m1_c1 <- m1_c1 %>% subset(select = -percent_complete)
+m1_c2 <- m1_c2 %>% subset(select = -percent_complete)
+m1_c3 <- m1_c3 %>% subset(select = -percent_complete)
+m2_c1 <- m2_c1 %>% subset(select = -percent_complete)
+m2_c2 <- m2_c2 %>% subset(select = -percent_complete)
+m2_c3 <- m2_c3 %>% subset(select = -percent_complete)
+m2_c1_kmean <- m2_c1_kmean %>% subset(select = -percent_complete)
+m2_c2_kmean <- m2_c2_kmean %>% subset(select = -percent_complete)
+m2_c3_kmean <- m2_c3_kmean %>% subset(select = -percent_complete)
+m2_c4_kmean <- m2_c4_kmean %>% subset(select = -percent_complete)
+m2_c5_kmean <- m2_c5_kmean %>% subset(select = -percent_complete)
+m1_c1_kmean <- m1_c1_kmean %>% subset(select = -percent_complete)
+m1_c2_kmean <- m1_c2_kmean %>% subset(select = -percent_complete)
+m1_c3_kmean <- m1_c3_kmean %>% subset(select = -percent_complete)
+m1_c4_kmean <- m1_c4_kmean %>% subset(select = -percent_complete)
+m1_c5_kmean <- m1_c5_kmean %>% subset(select = -percent_complete)
+```
+
+MODEL 1 FULL DATASET
+
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_full), .8*nrow(m1_full))
+
+training <- m1_full[rs,]
+testing <- m1_full[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 FULL DATASET
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_full), .8*nrow(m2_full))
+
+training <- m2_full[rs,]
+testing <- m2_full[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1])
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 1 CLUSTER 1
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c1), .8*nrow(m1_c1))
+
+training <- m1_c1[rs,]
+testing <- m1_c1[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 1
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c1), .8*nrow(m2_c1))
+
+training <- m2_c1[rs,]
+testing <- m2_c1[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 1 CLUSTER 2
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c2), .8*nrow(m1_c2))
+
+training <- m1_c2[rs,]
+testing <- m1_c2[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 2
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c2), .8*nrow(m2_c2))
+
+training <- m2_c2[rs,]
+testing <- m2_c2[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 1 CLUSTER 3
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c3), .8*nrow(m1_c3))
+
+training <- m1_c3[rs,]
+testing <- m1_c3[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 3
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c3), .8*nrow(m2_c3))
+
+training <- m2_c3[rs,]
+testing <- m2_c3[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree = 1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+<<<<<<< HEAD
+### Relationship between factors and house prices 
+
+```{r}
+ggplot(m1_full, aes(square_feet, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Square Feet and House Prices")
+```
+
+```{r warning= FALSE}
+m1_full %>%
+  filter(quality != '10') %>%
+ggplot( aes(quality, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic()+ scale_x_continuous(breaks=seq(1, 9, 1),labels=c('1'="Low", '2'="Low Plus", "3"="Fair", "4"="Fair Plus", "5"="Average", "6"="Average Plus","7"="Good","8"="Good Plus", '9' = "Very Good" )) + ggtitle("Posive Relationship between Quality and House Prices") 
+
+```
+
+```{r}
+ggplot(m1_full, aes(bathrooms, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Number of Bathrooms and House Prices") 
+```
+
+```{r}
+ggplot(m1_full, aes(bedrooms, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Number of Bedrooms and House Prices") 
+```
+
+```{r}
+ggplot(m1_full, aes(year_built, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Year Built and House Prices")  
+
+```
+
+```{r}
+ggplot(m1_full, aes(Crime_Num, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Negative Relationship between Crime Number and House Prices")  + xlab("Crime Number")
+
+```
+
+
+```{r}
+ggplot(m1_full, aes(attached_garage_square_feet, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Negative Relationship between Crime Number and House Prices")  
+
+```
+
+
+```{r}
+m1_full %>%
+  mutate(
+    near_college = 
+      case_when(
+        near_college == 1 ~ 'Yes',
+        near_college == 0 ~ 'No'
+      )
+  )%>%
+  group_by(near_college) %>%
+  summarise(`sales price` = mean(sale_price))%>%
+  ggplot(aes(near_college,`sales price`, fill = near_college)) + geom_bar(stat = 'identity') + scale_fill_brewer() + theme_classic() + ylab("sales price") + xlab("near college") +
+  ggtitle("The proximity to college has slight positive impact on housing prices") +geom_hline(aes(yintercept = 349005.4), color = 'red') 
+
+```
+
+```{r}
+m1_full %>%
+  mutate(
+    attached_garage = 
+      case_when(
+        attached_garage_square_feet == 1 ~ 'Yes',
+        attached_garage_square_feet == 0 ~ 'No'
+      )
+  )%>%
+  group_by(attached_garage) %>%
+  summarise(`sales price` = mean(sale_price))%>%
+  ggplot(aes(attached_garage,`sales price`, fill = attached_garage)) + geom_bar(stat = 'identity') + scale_fill_brewer() + theme_classic() + ylab("sales price") + xlab("attached garage") +
+  ggtitle("Attached garage has a positive impact on housing prices") +geom_hline(aes(yintercept = 293637.4), color = 'red') 
+
+```
+
+
+```{r}
+ggplot(m1_full, aes(fireplaces, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Fireplaces and House Prices")  
+
+```
+
+```{r}
+m1_full %>%
+  mutate(
+    basement_finished_square_feet = 
+      case_when(
+        basement_finished_square_feet == 1 ~ 'Yes',
+        basement_finished_square_feet == 0 ~ 'No'
+      )
+  )%>%
+  group_by(basement_finished_square_feet) %>%
+  summarise(`sales price` = mean(sale_price))%>%
+  ggplot(aes(basement_finished_square_feet,`sales price`, fill = basement_finished_square_feet)) + geom_bar(stat = 'identity') + scale_fill_brewer() + theme_classic() + ylab("sales price") + xlab("Basement") + ggtitle("Basement has a positive impact on housing prices") +geom_hline(aes(yintercept = 344681.7), color = 'red') +theme(legend.position = "none") 
+
+```
+
+```{r}
+ggplot(m1_full, aes(fireplaces, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Fireplaces and House Prices")  
+```
+
+=======
+FIVE CLUSTER MODEL
+
+MODEL 1 CLUSTER 1
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c1_kmean), .8*nrow(m1_c1_kmean))
+
+training <- m1_c1_kmean[rs,]
+testing <- m1_c1_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 1
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c1_kmean), .8*nrow(m2_c1_kmean))
+
+training <- m2_c1_kmean[rs,]
+testing <- m2_c1_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 1 CLUSTER 2
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c2_kmean), .8*nrow(m1_c2_kmean))
+
+training <- m1_c2_kmean[rs,]
+testing <- m1_c2_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 2
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c2_kmean), .8*nrow(m2_c2_kmean))
+
+training <- m2_c2_kmean[rs,]
+testing <- m2_c2_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 1 CLUSTER 3
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c3_kmean), .8*nrow(m1_c3_kmean))
+
+training <- m1_c3_kmean[rs,]
+testing <- m1_c3_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 3
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c3_kmean), .8*nrow(m2_c3_kmean))
+
+training <- m2_c3_kmean[rs,]
+testing <- m2_c3_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 1 CLUSTER 4
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c4_kmean), .8*nrow(m1_c4_kmean))
+
+training <- m1_c4_kmean[rs,]
+testing <- m1_c4_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 4
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c4_kmean), .8*nrow(m2_c4_kmean))
+
+training <- m2_c4_kmean[rs,]
+testing <- m2_c4_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 1 CLUSTER 5
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m1_c5_kmean), .8*nrow(m1_c5_kmean))
+
+training <- m1_c5_kmean[rs,]
+testing <- m1_c5_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+MODEL 2 CLUSTER 5
+```{r}
+#set.seed(1234) #to generate the same random numbers
+rs <- sample(nrow(m2_c5_kmean), .8*nrow(m2_c5_kmean))
+
+training <- m2_c5_kmean[rs,]
+testing <- m2_c5_kmean[-rs,]
+
+dim(training)
+dim(testing)
+
+attach(training)
+
+rfm <- randomForest(sale_price ~., data = training, ntree=1000)
+print(rfm)
+
+mse <- sum((rfm$predicted - training$sale_price)^2)/nrow(training)
+mse
+
+p1 <- predict(rfm, testing[,-1]) 
+mse2 <- sum((p1 - testing$sale_price)^2)/nrow(testing)
+mse2
+
+mape <- MAPE(p1, testing$sale_price)
+mape 
+
+varImpPlot(rfm)
+importance(rfm)
+```
+
+
+### Relationship between factors and house prices 
+
+```{r}
+ggplot(m1_full, aes(square_feet, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Square Feet and House Prices")
+```
+
+```{r warning= FALSE}
+m1_full %>%
+  filter(quality != '10') %>%
+ggplot( aes(quality, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic()+ scale_x_continuous(breaks=seq(1, 9, 1),labels=c('1'="Low", '2'="Low Plus", "3"="Fair", "4"="Fair Plus", "5"="Average", "6"="Average Plus","7"="Good","8"="Good Plus", '9' = "Very Good" )) + ggtitle("Posive Relationship between Quality and House Prices") 
+
+```
+
+```{r}
+ggplot(m1_full, aes(bathrooms, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Number of Bathrooms and House Prices") 
+```
+
+```{r}
+ggplot(m1_full, aes(bedrooms, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Number of Bedrooms and House Prices") 
+```
+
+```{r}
+ggplot(m1_full, aes(year_built, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Year Built and House Prices")  
+
+```
+
+```{r}
+ggplot(m1_full, aes(Crime_Num, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Negative Relationship between Crime Number and House Prices")  + xlab("Crime Number")
+
+```
+
+
+```{r}
+ggplot(m1_full, aes(attached_garage_square_feet, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Negative Relationship between Crime Number and House Prices")  
+
+```
+
+
+```{r}
+m1_full %>%
+  mutate(
+    near_college = 
+      case_when(
+        near_college == 1 ~ 'Yes',
+        near_college == 0 ~ 'No'
+      )
+  )%>%
+  group_by(near_college) %>%
+  summarise(`sales price` = mean(sale_price))%>%
+  ggplot(aes(near_college,`sales price`, fill = near_college)) + geom_bar(stat = 'identity') + scale_fill_brewer() + theme_classic() + ylab("sales price") + xlab("near college") +
+  ggtitle("The proximity to college has slight positive impact on housing prices") +geom_hline(aes(yintercept = 349005.4), color = 'red') 
+
+```
+
+```{r}
+m1_full %>%
+  mutate(
+    attached_garage = 
+      case_when(
+        attached_garage_square_feet == 1 ~ 'Yes',
+        attached_garage_square_feet == 0 ~ 'No'
+      )
+  )%>%
+  group_by(attached_garage) %>%
+  summarise(`sales price` = mean(sale_price))%>%
+  ggplot(aes(attached_garage,`sales price`, fill = attached_garage)) + geom_bar(stat = 'identity') + scale_fill_brewer() + theme_classic() + ylab("sales price") + xlab("attached garage") +
+  ggtitle("Attached garage has a positive impact on housing prices") +geom_hline(aes(yintercept = 293637.4), color = 'red') 
+
+```
+
+
+```{r}
+ggplot(m1_full, aes(fireplaces, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Fireplaces and House Prices")  
+
+```
+
+```{r}
+m1_full %>%
+  mutate(
+    basement_finished_square_feet = 
+      case_when(
+        basement_finished_square_feet == 1 ~ 'Yes',
+        basement_finished_square_feet == 0 ~ 'No'
+      )
+  )%>%
+  group_by(basement_finished_square_feet) %>%
+  summarise(`sales price` = mean(sale_price))%>%
+  ggplot(aes(basement_finished_square_feet,`sales price`, fill = basement_finished_square_feet)) + geom_bar(stat = 'identity') + scale_fill_brewer() + theme_classic() + ylab("sales price") + xlab("Basement") + ggtitle("Basement has a positive impact on housing prices") +geom_hline(aes(yintercept = 344681.7), color = 'red') +theme(legend.position = "none") 
+
+```
+
+```{r}
+ggplot(m1_full, aes(fireplaces, sale_price))+stat_smooth(se=TRUE, method='loess') + theme_classic() + ggtitle("Posive Relationship between Fireplaces and House Prices")  
+```

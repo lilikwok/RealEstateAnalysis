@@ -1,0 +1,190 @@
+---
+title: "Capstone EDA/Cleaning"
+author: "Walt Ames"
+date: "7/22/2019"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(dplyr)
+library(GGally)
+```
+
+```{r}
+master <- read_csv("master.csv")
+improvement <- read_csv("full_improvement_update.csv")
+```
+
+```{r}
+master <- master %>% left_join(improvement, by = "Parcel_Number")
+
+master <- master %>% select(-c(Appraisal_Date, X1.x, X1.y, row_num, Utility_Sewer, Utility_Water, Utility_Electric))
+```
+
+```{r}
+#change all data types 
+master <- 
+  master %>%
+  mutate(
+    View_Quality= as.factor(View_Quality),
+    Waterfront_Type = as.factor(Waterfront_Type),
+    withInSewerImprovement = as.factor(withInSewerImprovement),
+    near_firestation = as.factor(near_firestation),
+    near_healthcare = as.factor(near_healthcare),
+    near_libraries = as.factor(near_libraries),
+    near_policestation = as.factor(near_policestation),
+    near_schools = as.factor(near_schools),
+    near_waterplants = as.factor(near_waterplants),
+    condition = as.factor(condition),
+    quality = as.factor(quality),
+    attic_finished_square_feet = as.factor(attic_finished_square_feet),
+    basement_square_feet = as.factor(basement_square_feet),
+    basement_finished_square_feet = as.factor(basement_finished_square_feet),
+    porch_square_feet = as.factor(porch_square_feet),
+    attached_garage_square_feet = as.factor(attached_garage_square_feet),
+    detached_garage_square_feet = as.factor(detached_garage_square_feet)
+  )
+```
+
+```{r}
+#summary stats before treating outliers
+summary(master)
+```
+
+```{r}
+#skim before treating outliers
+skim(master)
+```
+
+```{r}
+boxplot(master$bedrooms)
+boxplot(master$bathrooms)
+boxplot(master$square_feet)
+boxplot(master$Land_Net_Acres)
+boxplot(master$stories)
+boxplot(master$sale_price)
+```
+
+```{r}
+hist(master$bedrooms)
+hist(master$bathrooms)
+hist(master$square_feet)
+hist(master$Land_Net_Acres)
+hist(master$stories)
+hist(master$sale_price)
+```
+
+```{r}
+#outlier treatment
+master <- master %>% filter(between(sale_price, 20000, 800000),
+                            Land_Net_Acres < .7,
+                            between(square_feet, 120, 4500),
+                            bedrooms <= 6,
+                            between(bathrooms, 1, 4),
+                            between(stories, 0, 4),
+                            fireplaces < 4)
+```
+
+```{r}
+master <- master %>%
+      mutate(withInSewerImprovement = ifelse(withInSewerImprovement == "N",0,1)) %>%
+      mutate(near_firestation = ifelse(near_firestation == "N",0,1)) %>%
+      mutate(near_healthcare = ifelse(near_healthcare == "N",0,1)) %>%
+      mutate(near_libraries = ifelse(near_libraries == "N",0,1)) %>%
+      mutate(near_policestation = ifelse(near_policestation == "N",0,1)) %>%
+      mutate(near_schools = ifelse(near_schools == "N",0,1)) %>%
+      mutate(near_waterplants = ifelse(near_waterplants == "N",0,1))
+```
+
+```{r}
+#code for view/waterfront conversion 
+master[!is.na(master['View_Quality']),'View_Quality'] <- 1
+master[is.na(master['View_Quality']),'View_Quality'] <- 0
+master[!is.na(master['Waterfront_Type']),'Waterfront_Type'] <- 1
+master[is.na(master['Waterfront_Type']),'Waterfront_Type'] <- 0
+
+master$View_Quality <- as.numeric(master$View_Quality)
+master$Waterfront_Type <- as.numeric(master$Waterfront_Type)
+```
+
+```{r}
+#descriptive statistics after treating outliers
+summary(master)
+```
+
+```{r}
+#skim after treating outlier data
+skim(master)
+```
+
+```{r}
+#df for numeric variables
+numeric_variables <- master %>% select(sale_price, year_built, Land_Net_Acres, square_feet, fireplaces, stories, bathrooms, bedrooms, condition, quality, Crime_Num)
+```
+
+```{r}
+binary_variables <- master %>% select(withInSewerImprovement, near_firestation, near_healthcare, near_libraries, near_policestation, near_schools, near_waterplants, detached_garage_square_feet, attached_garage_square_feet, basement_finished_square_feet, basement_square_feet, attic_finished_square_feet, Waterfront_Type, View_Quality)
+```
+
+```{r}
+summary(numeric_variables)
+```
+
+```{r}
+summary(binary_variables) #mean only
+```
+
+### correlation 
+
+```{r}
+#correlation for numberic variables
+ggpairs(numeric_variables)
+```
+
+```{r}
+
+categorical <- master %>%
+  select(View_Quality,Waterfront_Type, 
+         near_firestation, near_healthcare, near_libraries, near_policestation, near_waterplants,
+         near_schools, withInSewerImprovement, condition,  quality,attic_finished_square_feet,basement_square_feet,porch_square_feet,attached_garage_square_feet,detached_garage_square_feet)
+Numeric <- master %>%
+  select(Crime_Num,square_feet, fireplaces, stories, bedrooms, bathrooms,year_built, sale_price)
+```
+
+### 
+```{r}
+chisq.test(table(master$View_Quality,master$Waterfront_Type))
+```
+
+```{r}
+chisq.test(table(master$near_firestation,master$near_healthcare))
+chisq.test(table(master$near_policestation,master$near_waterplants))
+chisq.test(table(master$near_policestation,master$near_firestation))
+chisq.test(table(master$near_libraries,master$near_firestation))
+chisq.test(table(master$near_policestation,master$near_libraries))
+chisq.test(table(master$near_libraries,master$near_schools))
+chisq.test(table(master$porch_square_feet,master$basement_square_feet))
+chisq.test(table(master$condition,master$quality))
+chisq.test(table(master$attached_garage_square_feet,master$detached_garage_square_feet))
+```
+
+```{r fig.width= 10}
+pairs.panels(categorical)
+
+```
+
+
+```{r}
+
+cor(Numeric,use = "na.or.complete")
+pairs.panels(Numeric)
+```
+
+
+```{r}
+plot(bathrooms ~ square_feet, data = master)
+abline(lm(bathrooms ~ square_feet, data = master))
+```
+
